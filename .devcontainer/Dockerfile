@@ -1,11 +1,11 @@
-##############################################
-# Created from template ros2.dockerfile.jinja
-##############################################
+#############################################
+# Created from template ros.dockerfile.jinja
+#############################################
 
 ###########################################
 # Base image 
 ###########################################
-FROM ubuntu:22.04 AS base
+FROM ubuntu:18.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -30,29 +30,35 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
 ###########################################
 FROM base AS ros
 
-# Install ROS2
+# Install ROS
 RUN apt-get update && apt-get install -y \
     curl \
+    dirmngr \
     gnupg2 \
     lsb-release \
     sudo \
   && apt-get upgrade \
-  && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
-  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
+  && sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' \
+  && curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - \
   && apt-get update && apt-get install -y \
-    ros-humble-desktop-full \
-    ros-dev-tools \
-    python3-argcomplete \
+    ros-melodic-desktop-full \
+  && apt-get upgrade libignition-math2 \
   && rm -rf /var/lib/apt/lists/*
 
-ENV ROS_DISTRO=humble
-ENV AMENT_PREFIX_PATH=/opt/ros/humble
-ENV COLCON_PREFIX_PATH=/opt/ros/humble
-ENV LD_LIBRARY_PATH=/opt/ros/humble/lib
-ENV PATH=/opt/ros/humble/bin:$PATH
-ENV PYTHONPATH=/opt/ros/humble/lib/python3.10/site-packages
-ENV ROS_PYTHON_VERSION=3
-ENV ROS_VERSION=2
+# Setup environment
+ENV LD_LIBRARY_PATH=/opt/ros/melodic/lib
+ENV ROS_DISTRO=melodic
+ENV ROS_ROOT=/opt/ros/melodic/share/ros
+ENV ROS_PACKAGE_PATH=/opt/ros/melodic/share
+ENV ROS_MASTER_URI=http://localhost:11311
+ENV ROS_PYTHON_VERSION=
+ENV ROS_VERSION=1
+ENV PATH=/opt/ros/melodic/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV ROSLISP_PACKAGE_DIRECTORIES=
+ENV PYTHONPATH=/opt/ros/melodic/lib/python2.7/dist-packages
+ENV PKG_CONFIG_PATH=/opt/ros/melodic/lib/pkgconfig
+ENV ROS_ETC_DIR=/opt/ros/melodic/etc/ros
+ENV CMAKE_PREFIX_PATH=/opt/ros/melodic
 ENV DEBIAN_FRONTEND=
 
 ###########################################
@@ -61,30 +67,23 @@ ENV DEBIAN_FRONTEND=
 FROM ros AS dev
 
 ENV DEBIAN_FRONTEND=noninteractive
+# Install dev tools
 RUN apt-get update && apt-get install -y \
-  bash-completion \
-  build-essential \
-  cmake \
-  gdb \
-  git \
-  pylint \
-  python3-argcomplete \
-  python3-colcon-common-extensions \
-  python3-pip \
-  python3-rosdep \
-  python3-vcstool \
-  vim \
-  wget \
-  # Install ros distro testing packages
-  ros-humble-ament-lint \
-  ros-humble-launch-testing \
-  ros-humble-launch-testing-ament-cmake \
-  ros-humble-launch-testing-ros \
-  python3-autopep8 \
+    python-rosdep \
+    python-rosinstall \
+    python-rosinstall-generator \
+    python-wstool \
+    python-pip \
+    python-pep8 \
+    python-autopep8 \
+    pylint \
+    build-essential \
+    bash-completion \
+    git \
+    vim \
+    python3-catkin-tools \
   && rm -rf /var/lib/apt/lists/* \
-  && rosdep init || echo "rosdep already initialized" \
-  # Update pydocstyle
-  && pip install --upgrade pydocstyle
+  && rosdep init || echo "rosdep already initialized"
 
 ARG USERNAME=ros
 ARG USER_UID=1000
@@ -101,11 +100,10 @@ RUN groupadd --gid $USER_GID $USERNAME \
   # Cleanup
   && rm -rf /var/lib/apt/lists/* \
   && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc \
-  && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
-
+  && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc \
+  && rosdep update
 ENV DEBIAN_FRONTEND=
-ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
 
 # Set up auto-source of workspace for ros user
 ARG WORKSPACE
-RUN echo "if [ -f ${WORKSPACE}/install/setup.bash ]; then source ${WORKSPACE}/install/setup.bash; fi" >> /home/ros/.bashrc
+RUN echo "if [ -f ${WORKSPACE}/devel/setup.bash ]; then source ${WORKSPACE}/devel/setup.bash; fi" >> /home/ros/.bashrc
