@@ -36,10 +36,10 @@ RUN apt-get update && apt-get install -y \
     gnupg2 \
     lsb-release \
     sudo \
-  && apt-get upgrade \
+  && apt-get upgrade -y \
   && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
   && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
-  && apt-get update && apt-get install -y \
+  && apt-get update && apt-get install -y --no-install-recommends \
     ros-humble-desktop-full \
     ros-dev-tools \
     python3-argcomplete \
@@ -61,7 +61,7 @@ ENV DEBIAN_FRONTEND=
 FROM ros AS dev
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
   bash-completion \
   build-essential \
   cmake \
@@ -95,12 +95,11 @@ RUN groupadd --gid $USER_GID $USERNAME \
   && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
   # [Optional] Add sudo support for the non-root user
   && apt-get update \
-  && apt-get install -y sudo \
+  && apt-get install -y sudo git-core bash-completion \
   && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
   && chmod 0440 /etc/sudoers.d/$USERNAME \
   # Cleanup
   && rm -rf /var/lib/apt/lists/* \
-  && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc \
   && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
 
 ENV DEBIAN_FRONTEND=
