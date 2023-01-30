@@ -37,12 +37,12 @@ RUN apt-get update && apt-get install -y \
     gnupg2 \
     lsb-release \
     sudo \
-  && apt-get upgrade \
+  && apt-get upgrade -y \
   && sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' \
   && curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - \
   && apt-get update && apt-get install -y \
     ros-melodic-desktop-full \
-  && apt-get upgrade libignition-math2 \
+  && apt-get upgrade libignition-math2 -y \
   && rm -rf /var/lib/apt/lists/*
 
 # Setup environment
@@ -62,7 +62,7 @@ ENV CMAKE_PREFIX_PATH=/opt/ros/melodic
 ENV DEBIAN_FRONTEND=
 
 ###########################################
-#  Develop image 
+# Develop image 
 ###########################################
 FROM ros AS dev
 
@@ -94,12 +94,11 @@ RUN groupadd --gid $USER_GID $USERNAME \
   && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
   # [Optional] Add sudo support for the non-root user
   && apt-get update \
-  && apt-get install -y sudo \
+  && apt-get install -y sudo git-core bash-completion \
   && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
   && chmod 0440 /etc/sudoers.d/$USERNAME \
   # Cleanup
   && rm -rf /var/lib/apt/lists/* \
-  && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc \
   && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc \
   && rosdep update
 ENV DEBIAN_FRONTEND=
