@@ -1,0 +1,3 @@
+[submodule "src/quad-sdk"]
+	path = src/quad-sdk
+	url = git@github.com:robomechanics/quad-sdk.git
