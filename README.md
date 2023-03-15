@@ -21,7 +21,7 @@ Take a look at [how I develop using tasks](https://www.allisonthackston.com/arti
 
 ### Debugging
 
-This template sets up debugging for python files and gdb for cpp programs.  See [`.vscode/launch.json`](.vscode/launch.json) for configuration details.
+This template sets up debugging for python files, gdb for cpp programs and ROS launch files.  See [`.vscode/launch.json`](.vscode/launch.json) for configuration details.
 
 ### Continuous Integration
 
@@ -82,14 +82,64 @@ VSCode will build the dockerfile inside of `.devcontainer` for you.  If you open
 
 ![template_container](https://user-images.githubusercontent.com/6098197/91332895-adbf1500-e781-11ea-8afc-7a22a5340d4a.png)
 
-
 ### Update the template with your code
 
 1. Specify the repositories you want to include in your workspace in `src/ros2.repos` or delete `src/ros2.repos` and develop directly within the workspace.
 2. If you are using a `ros2.repos` file, import the contents `Terminal->Run Task..->import from workspace file`
-2. Install dependencies `Terminal->Run Task..->install dependencies`
-3. (optional) Adjust scripts to your liking.  These scripts are used both within tasks and CI.
-   1. `setup.sh` The setup commands for your code.  Default to import workspace and install dependencies.
-   2. `build.sh` The build commands for your code.  Default to `--merge-install` and `--symlink-install`
-   3. `test.sh` The test commands for your code.
-4. Develop!
+3. Install dependencies `Terminal->Run Task..->install dependencies`
+4. (optional) Adjust scripts to your liking.  These scripts are used both within tasks and CI.
+   * `setup.sh` The setup commands for your code.  Default to import workspace and install dependencies.
+   * `build.sh` The build commands for your code.  Default to `--merge-install` and `--symlink-install`
+   * `test.sh` The test commands for your code.
+5. Develop!
+
+
+## FAQ
+
+### WSL2
+
+#### The gui doesn't show up
+
+This is likely because the DISPLAY environment variable is not getting set properly.
+
+1. Find out what your DISPLAY variable should be
+
+      In your WSL2 Ubuntu instance
+
+      ```
+      echo $DISPLAY
+      ```
+
+2. Copy that value into the `.devcontainer/devcontainer.json` file
+
+      ```jsonc
+      	"containerEnv": {
+		      "DISPLAY": ":0",
+         }
+      ```
+
+#### I want to use vGPU
+
+If you want to access the vGPU through WSL2, you'll need to add additional components to the `.devcontainer/devcontainer.json` file in accordance to [these directions](https://github.com/microsoft/wslg/blob/main/samples/container/Containers.md)
+
+```jsonc
+	"runArgs": [
+		"--network=host",
+		"--cap-add=SYS_PTRACE",
+		"--security-opt=seccomp:unconfined",
+		"--security-opt=apparmor:unconfined",
+		"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
+		"--volume=/mnt/wslg:/mnt/wslg",
+		"--volume=/usr/lib/wsl:/usr/lib/wsl",
+		"--device=/dev/dxg",
+      		"--gpus=all"
+	],
+	"containerEnv": {
+		"DISPLAY": "${localEnv:DISPLAY}", // Needed for GUI try ":0" for windows
+		"WAYLAND_DISPLAY": "${localEnv:WAYLAND_DISPLAY}",
+		"XDG_RUNTIME_DIR": "${localEnv:XDG_RUNTIME_DIR}",
+		"PULSE_SERVER": "${localEnv:PULSE_SERVER}",
+		"LD_LIBRARY_PATH": "/usr/lib/wsl/lib",
+		"LIBGL_ALWAYS_SOFTWARE": "1" // Needed for software rendering of opengl
+	},
+```

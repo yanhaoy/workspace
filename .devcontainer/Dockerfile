@@ -25,21 +25,29 @@ RUN ln -fs /usr/share/zoneinfo/UTC /etc/localtime \
   && dpkg-reconfigure --frontend noninteractive tzdata \
   && rm -rf /var/lib/apt/lists/*
 
+RUN apt-get update && apt-get -y upgrade \
+    && rm -rf /var/lib/apt/lists/*
+
 ###########################################
 # ROS image 
 ###########################################
 FROM base AS ros
 
-# Install ROS2
-RUN apt-get update && apt-get install -y \
+# Install common programs
+RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     gnupg2 \
     lsb-release \
     sudo \
-  && apt-get upgrade \
+    software-properties-common \
+    wget \
+    && rm -rf /var/lib/apt/lists/*
+
+# Install ROS2
+RUN sudo add-apt-repository universe \
   && curl -sSL https://raw.githubusercontent.com/ros/rosdistro/master/ros.key -o /usr/share/keyrings/ros-archive-keyring.gpg \
-  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(lsb_release -cs) main" | tee /etc/apt/sources.list.d/ros2.list > /dev/null \
-  && apt-get update && apt-get install -y \
+  && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/ros-archive-keyring.gpg] http://packages.ros.org/ros2/ubuntu $(. /etc/os-release && echo $UBUNTU_CODENAME) main" | sudo tee /etc/apt/sources.list.d/ros2.list > /dev/null \
+  && apt-get update && apt-get -y upgrade && apt-get install -y --no-install-recommends \
     ros-humble-desktop-full \
     ros-dev-tools \
     python3-argcomplete \
@@ -61,30 +69,19 @@ ENV DEBIAN_FRONTEND=
 FROM ros AS dev
 
 ENV DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y --no-install-recommends \
   bash-completion \
   build-essential \
   cmake \
   gdb \
   git \
-  pylint \
+  openssh-client \
   python3-argcomplete \
-  python3-colcon-common-extensions \
   python3-pip \
-  python3-rosdep \
-  python3-vcstool \
+  ros-dev-tools \
   vim \
-  wget \
-  # Install ros distro testing packages
-  ros-humble-ament-lint \
-  ros-humble-launch-testing \
-  ros-humble-launch-testing-ament-cmake \
-  ros-humble-launch-testing-ros \
-  python3-autopep8 \
   && rm -rf /var/lib/apt/lists/* \
-  && rosdep init || echo "rosdep already initialized" \
-  # Update pydocstyle
-  && pip install --upgrade pydocstyle
+  && rosdep init || echo "rosdep already initialized"
 
 ARG USERNAME=ros
 ARG USER_UID=1000
@@ -95,12 +92,11 @@ RUN groupadd --gid $USER_GID $USERNAME \
   && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
   # [Optional] Add sudo support for the non-root user
   && apt-get update \
-  && apt-get install -y sudo \
+  && apt-get install -y sudo git-core bash-completion \
   && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
   && chmod 0440 /etc/sudoers.d/$USERNAME \
   # Cleanup
   && rm -rf /var/lib/apt/lists/* \
-  && echo "source /usr/share/bash-completion/completions/git" >> /home/$USERNAME/.bashrc \
   && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc
 
 ENV DEBIAN_FRONTEND=
