@@ -6,7 +6,7 @@
 			"WORKSPACE": "${containerWorkspaceFolder}"
 		}
 	},
-	"remoteUser": "ros",
+	"remoteUser": "jovyan",
 	"runArgs": [
 		"--network=host",
 		"--cap-add=SYS_PTRACE",
