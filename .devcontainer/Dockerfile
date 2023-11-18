@@ -5,7 +5,7 @@
 ###########################################
 # Base image 
 ###########################################
-FROM ubuntu:18.04 AS base
+FROM ubuntu:20.04 AS base
 
 ENV DEBIAN_FRONTEND=noninteractive
 
@@ -41,24 +41,23 @@ RUN apt-get update && apt-get install -y \
   && sh -c 'echo "deb http://packages.ros.org/ros/ubuntu $(lsb_release -sc) main" > /etc/apt/sources.list.d/ros-latest.list' \
   && curl -s https://raw.githubusercontent.com/ros/rosdistro/master/ros.asc | apt-key add - \
   && apt-get update && apt-get install -y \
-    ros-melodic-desktop-full \
-  && apt-get upgrade libignition-math2 -y \
+    ros-noetic-desktop-full \
   && rm -rf /var/lib/apt/lists/*
 
 # Setup environment
-ENV LD_LIBRARY_PATH=/opt/ros/melodic/lib
-ENV ROS_DISTRO=melodic
-ENV ROS_ROOT=/opt/ros/melodic/share/ros
-ENV ROS_PACKAGE_PATH=/opt/ros/melodic/share
+ENV LD_LIBRARY_PATH=/opt/ros/noetic/lib
+ENV ROS_DISTRO=noetic
+ENV ROS_ROOT=/opt/ros/noetic/share/ros
+ENV ROS_PACKAGE_PATH=/opt/ros/noetic/share
 ENV ROS_MASTER_URI=http://localhost:11311
-ENV ROS_PYTHON_VERSION=
+ENV ROS_PYTHON_VERSION=3
 ENV ROS_VERSION=1
-ENV PATH=/opt/ros/melodic/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+ENV PATH=/opt/ros/noetic/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
 ENV ROSLISP_PACKAGE_DIRECTORIES=
-ENV PYTHONPATH=/opt/ros/melodic/lib/python2.7/dist-packages
-ENV PKG_CONFIG_PATH=/opt/ros/melodic/lib/pkgconfig
-ENV ROS_ETC_DIR=/opt/ros/melodic/etc/ros
-ENV CMAKE_PREFIX_PATH=/opt/ros/melodic
+ENV PYTHONPATH=/opt/ros/noetic/lib/python3/dist-packages
+ENV PKG_CONFIG_PATH=/opt/ros/noetic/lib/pkgconfig
+ENV ROS_ETC_DIR=/opt/ros/noetic/etc/ros
+ENV CMAKE_PREFIX_PATH=/opt/ros/noetic
 ENV DEBIAN_FRONTEND=
 
 ###########################################
@@ -69,14 +68,14 @@ FROM ros AS dev
 ENV DEBIAN_FRONTEND=noninteractive
 # Install dev tools
 RUN apt-get update && apt-get install -y \
-    python-rosdep \
-    python-rosinstall \
-    python-rosinstall-generator \
-    python-wstool \
-    python-pip \
-    python-pep8 \
-    python-autopep8 \
-    pylint \
+    python3-rosdep \
+    python3-rosinstall \
+    python3-rosinstall-generator \
+    python3-wstool \
+    python3-pip \
+    python3-pep8 \
+    python3-autopep8 \
+    pylint3 \
     build-essential \
     bash-completion \
     git \
@@ -92,14 +91,18 @@ ARG USER_GID=$USER_UID
 # Create a non-root user
 RUN groupadd --gid $USER_GID $USERNAME \
   && useradd -s /bin/bash --uid $USER_UID --gid $USER_GID -m $USERNAME \
-  # [Optional] Add sudo support for the non-root user
+  # Add sudo support for the non-root user
   && apt-get update \
-  && apt-get install -y sudo git-core bash-completion \
+  && apt-get install -y sudo \
   && echo $USERNAME ALL=\(root\) NOPASSWD:ALL > /etc/sudoers.d/$USERNAME\
   && chmod 0440 /etc/sudoers.d/$USERNAME \
-  # Cleanup
-  && rm -rf /var/lib/apt/lists/* \
+  && rm -rf /var/lib/apt/lists/*
+
+# Set up autocompletion for user
+RUN apt-get update && apt-get install -y git-core bash-completion \
   && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc \
+  && echo "if [ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash ]; then source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash; fi" >> /home/$USERNAME/.bashrc \
+  && rm -rf /var/lib/apt/lists/* \
   && rosdep update
 ENV DEBIAN_FRONTEND=
 

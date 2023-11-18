@@ -1,0 +1,6 @@
+[submodule "src/mocap_optitrack"]
+	path = src/mocap_optitrack
+	url = git@github.com-yanhaoy:ros-drivers/mocap_optitrack.git
+[submodule "src/land_salp_ros"]
+	path = src/land_salp_ros
+	url = git@github.com-yanhaoy:yanhaoy/land_salp_ros.git
