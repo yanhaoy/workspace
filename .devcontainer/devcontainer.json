@@ -44,5 +44,6 @@
 				"zachflower.uncrustify"
 			]
 		}
-	}
+	},
+	"postStartCommand": "xhost +local:docker"
 }

@@ -31,7 +31,6 @@ RUN apt-get update && apt-get -y upgrade \
 # Install common programs
 RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
-    gnupg \
     gnupg2 \
     lsb-release \
     sudo \
@@ -114,6 +113,19 @@ ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
 FROM dev AS full
 
 ENV DEBIAN_FRONTEND=noninteractive
+# Install the full release
+RUN apt-get update && apt-get install -y --no-install-recommends \
+  ros-humble-desktop \
+  && rm -rf /var/lib/apt/lists/*
+ENV DEBIAN_FRONTEND=
+ENV LD_LIBRARY_PATH=/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib
+
+###########################################
+#  Full+Gazebo image
+###########################################
+FROM full AS gazebo
+
+ENV DEBIAN_FRONTEND=noninteractive
 # Install gazebo
 RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pkgs-osrf-archive-keyring.gpg \
   && echo "deb [arch=$(dpkg --print-architecture) signed-by=/usr/share/keyrings/pkgs-osrf-archive-keyring.gpg] http://packages.osrfoundation.org/gazebo/ubuntu-stable $(lsb_release -cs) main" | sudo tee /etc/apt/sources.list.d/gazebo-stable.list > /dev/null \
@@ -121,4 +133,21 @@ RUN wget https://packages.osrfoundation.org/gazebo.gpg -O /usr/share/keyrings/pk
     gz-garden \
   && rm -rf /var/lib/apt/lists/*
 ENV DEBIAN_FRONTEND=
-ENV LD_LIBRARY_PATH=/opt/ros/humble/opt/rviz_ogre_vendor/lib:/opt/ros/humble/lib/x86_64-linux-gnu:/opt/ros/humble/lib
+
+###########################################
+#  Full+Gazebo+Own image
+###########################################
+FROM gazebo AS own
+
+ENV DEBIAN_FRONTEND=noninteractive
+# Install gazebo
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    gnupg \
+    python-is-python3 \
+    libxcb-xinerama0 \
+    libxcb-cursor0 \
+    ros-humble-ros-gzgarden \
+    && rm -rf /var/lib/apt/lists/* \
+    && printf 'export PATH="$(python3 -m site --user-base)/bin:$PATH"\n' \
+      >/etc/profile.d/pyuserbase.sh
+ENV DEBIAN_FRONTEND=
