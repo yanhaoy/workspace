@@ -14,7 +14,9 @@
 		"--security-opt=apparmor:unconfined",
 		"--volume=/tmp/.X11-unix:/tmp/.X11-unix",
 		"--volume=/mnt/wslg:/mnt/wslg",
-		"--ipc=host"
+		"--ipc=host",
+		// inherit host plugdev access
+		"--group-add=plugdev",
 		// uncomment to use intel iGPU
 		// "--device=/dev/dri"
 	],
@@ -45,5 +47,6 @@
 			]
 		}
 	},
-	"postStartCommand": "xhost +local:docker"
+	"mounts": ["type=bind,source=/dev/bus/usb,target=/dev/bus/usb"],
+	"privileged": true,
 }
