@@ -99,10 +99,10 @@ RUN apt-get update && apt-get install -y sudo \
   && rm -rf /var/lib/apt/lists/*
 
 # Set up autocompletion for user
-RUN apt-get update && apt-get install -y --no-install-recommends git-core bash-completion \
-  && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc \
-  && echo "if [ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash ]; then source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash; fi" >> /home/$USERNAME/.bashrc \
-  && rm -rf /var/lib/apt/lists/*
+ RUN apt-get update && apt-get install -y --no-install-recommends git-core bash-completion \
+   && echo "if [ -f /opt/ros/${ROS_DISTRO}/setup.bash ]; then source /opt/ros/${ROS_DISTRO}/setup.bash; fi" >> /home/$USERNAME/.bashrc \
+   && echo "if [ -f /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash ]; then source /usr/share/colcon_argcomplete/hook/colcon-argcomplete.bash; fi" >> /home/$USERNAME/.bashrc \
+   && rm -rf /var/lib/apt/lists/*
 
 ENV DEBIAN_FRONTEND=
 ENV AMENT_CPPCHECK_ALLOW_SLOW_VERSIONS=1
@@ -147,6 +147,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxcb-xinerama0 \
     libxcb-cursor0 \
     ros-humble-ros-gzgarden \
+    && (grep -qxF "export ROS_LOCALHOST_ONLY=1" /home/$USERNAME/.bashrc || echo "export ROS_LOCALHOST_ONLY=1" >> /home/$USERNAME/.bashrc) \
     && rm -rf /var/lib/apt/lists/* \
     && printf 'export PATH="$(python3 -m site --user-base)/bin:$PATH"\n' \
       >/etc/profile.d/pyuserbase.sh
